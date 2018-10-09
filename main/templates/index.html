@@ -1,0 +1,125 @@
+<html>
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <style>
+        .topics, .entries {
+            width: 30%;
+            margin: auto;
+        }
+
+        .topic {
+            border-width: 1px;
+            margin-bottom: 10px;
+        }
+
+        .new-topic form input, .new-topic form textarea,
+        .entries form input, .entries form textarea {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="topics">
+        <h2>Topics</h2>
+        <div class="existing-topics">
+        </div>
+
+
+        <h2>New Topic</h2>
+        <div class="new-topic">
+            <form class="form">
+                <input type="text" name="poster" placeholder="poster" /><br />
+                <input type="text" name="title" placeholder="title" /><br />
+                <textarea name="description"></textarea>
+                <input type="submit" name="submit" />
+            </form>
+        </div>
+    </div>
+
+    <div class="entries" style="display:none">
+        <h2 class="title"></h2>
+        <div class="content"></div>
+
+        <h2>Comments</h2>
+        <ul class="comments"></ul>
+        <button onclick="routeHome()">Back</button>
+
+        <h2>New Comment</h2>
+        <div class="new-comment">
+            <form class="form">
+                <input type="text" name="poster" placeholder="poster" /><br />
+                <textarea name="comment"></textarea>
+                <input type="submit" name="submit" />
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        function addToTopicList(topic) {
+            jQuery('.existing-topics').append('<div class="topic" onclick="routeToEntry(' + topic.id + ')">' + topic.title + '</div>');
+        }
+
+        function addComment(comment) {
+            jQuery('.entries ul.comments').append('<li>' + comment.comment + ' - ' + comment.poster + '</li>');
+        }
+
+        function loadEntry(id) {
+            jQuery('.entries ul.comments').html('');
+
+            jQuery.get('/topic/' + id, function (data) {
+                jQuery('.entries').attr('data-id', id);
+                jQuery('.entries .title').text(data.title + ' by ' + data.poster);
+                jQuery('.entries .content').text(data.description);
+
+                data.comments.forEach(function (comment) {
+                    jQuery('.entries ul.comments').append('<li>' + comment.comment + ' - ' + comment.poster + '</li>');
+                });
+            });
+        }
+
+        function routeHome() {
+            jQuery('.topics').show();
+            jQuery('.entries').hide();
+        }
+
+        function routeToEntry(id) {
+            jQuery('.topics').hide();
+            jQuery('.entries').show();
+            loadEntry(id);
+        }
+
+        jQuery.get('/topic-flat', function (data) {
+            data.forEach(element => {
+                addToTopicList(element);
+            });
+        });
+
+        jQuery('.new-comment .form').on('submit', function (e) {
+            e.preventDefault();
+
+            var data = jQuery('.new-comment .form').serializeArray().reduce(function (m, o) { m[o.name] = o.value; return m; }, {})
+
+            data.topic = jQuery('.entries').attr('data-id');
+
+            jQuery.post('/comment/', data, function (output) {
+                addComment(output);
+            });
+        })
+
+        jQuery('.new-topic .form').on('submit', function (e) {
+            e.preventDefault();
+
+            var data = jQuery('.new-topic .form').serializeArray().reduce(function (m, o) { m[o.name] = o.value; return m; }, {})
+
+            jQuery.post('/topic/', data, function (output) {
+                addToTopicList(output);
+            });
+        })
+    </script>
+</body>
+
+</html>
